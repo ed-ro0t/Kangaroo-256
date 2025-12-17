@@ -319,13 +319,13 @@ bool GPUEngine::GetGridSize(int gpuId,int *x,int *y) {
     // Each thread needs: KSIZE * GPU_GRP_SIZE * 8 bytes for kangaroos
     size_t memPerThreadGroup = (size_t)KSIZE * GPU_GRP_SIZE * 8;
     
-    // Reserve some memory for output buffer and other allocations (e.g., 100 MB)
+    // Reserve some memory for output buffer and other allocations (100 MB)
     size_t reservedMem = 100 * 1024 * 1024;
-    size_t availableMem = freeMem > reservedMem ? freeMem - reservedMem : freeMem * 0.9;
+    size_t availableMem = freeMem > reservedMem ? freeMem - reservedMem : freeMem;
 
     if(*x <= 0) {
       // Calculate optimal grid size based on available memory
-      // Try to use 90% of available memory
+      // Use 90% of available memory to leave some headroom
       size_t targetMem = (size_t)(availableMem * 0.9);
       
       // Calculate how many thread groups we can fit
@@ -333,7 +333,7 @@ bool GPUEngine::GetGridSize(int gpuId,int *x,int *y) {
       if(*y <= 0) *y = 128;
       
       size_t totalMemPerBlock = memPerThreadGroup * (*y);
-      int optimalX = (int)(targetMem / totalMemPerBlock);
+      int optimalX = totalMemPerBlock > 0 ? (int)(targetMem / totalMemPerBlock) : 0;
       
       // Limit to reasonable values
       int minX = deviceProp.multiProcessorCount;
