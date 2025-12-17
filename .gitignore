@@ -10,6 +10,7 @@ obj/
 .idea/
 CMakeLists.txt
 kangaroo
+kangaroo-256
 cmake-build-debug/
 *.prf
 input-*
