@@ -958,6 +958,8 @@ void Kangaroo::Run(int nbThread,std::vector<int> gpuId,std::vector<int> gridSize
     int x = gridSize[2ULL * i];
     int y = gridSize[2ULL * i + 1ULL];
     if(!GPUEngine::GetGridSize(gpuId[i],&x,&y)) {
+      free(params);
+      free(thHandles);
       return;
     } else {
       params[nbCPUThread + i].gridSizeX = x;
@@ -974,8 +976,11 @@ void Kangaroo::Run(int nbThread,std::vector<int> gpuId,std::vector<int> gridSize
   // Set starting parameters
   if( clientMode ) {
     // Retrieve config from server
-    if( !GetConfigFromServer() )
+    if( !GetConfigFromServer() ) {
+      free(params);
+      free(thHandles);
       ::exit(0);
+    }
     // Client save only kangaroos, force -ws
     if(workFile.length()>0)
       saveKangaroo = true;
@@ -1090,6 +1095,10 @@ void Kangaroo::Run(int nbThread,std::vector<int> gpuId,std::vector<int> gridSize
   double t1 = Timer::get_tick();
 
   ::printf("\nDone: Total time %s \n" , GetTimeStr(t1-t0+offsetTime).c_str());
+
+  // Cleanup
+  free(params);
+  free(thHandles);
 
 }
 

@@ -309,9 +309,48 @@ bool GPUEngine::GetGridSize(int gpuId,int *x,int *y) {
     cudaDeviceProp deviceProp;
     cudaGetDeviceProperties(&deviceProp,gpuId);
 
-    if(*x <= 0) *x = 2 * deviceProp.multiProcessorCount;
-    if(*y <= 0) *y = 2 * _ConvertSMVer2Cores(deviceProp.major,deviceProp.minor);
-    if(*y <= 0) *y = 128;
+    // Query available GPU memory
+    size_t freeMem = 0;
+    size_t totalMem = 0;
+    cudaSetDevice(gpuId);
+    cudaMemGetInfo(&freeMem, &totalMem);
+
+    // Calculate memory needed per thread group
+    // Each thread needs: KSIZE * GPU_GRP_SIZE * 8 bytes for kangaroos
+    size_t memPerThreadGroup = (size_t)KSIZE * GPU_GRP_SIZE * 8;
+    
+    // Reserve some memory for output buffer and other allocations (100 MB)
+    size_t reservedMem = 100 * 1024 * 1024;
+    size_t availableMem = freeMem > reservedMem ? freeMem - reservedMem : freeMem;
+
+    if(*x <= 0) {
+      // Calculate optimal grid size based on available memory
+      // Use 90% of available memory to leave some headroom
+      size_t targetMem = (size_t)(availableMem * 0.9);
+      
+      // Calculate how many thread groups we can fit
+      if(*y <= 0) *y = 2 * _ConvertSMVer2Cores(deviceProp.major,deviceProp.minor);
+      if(*y <= 0) *y = 128;
+      
+      size_t totalMemPerBlock = memPerThreadGroup * (*y);
+      int optimalX = totalMemPerBlock > 0 ? (int)(targetMem / totalMemPerBlock) : 0;
+      
+      // Limit to reasonable values
+      int minX = deviceProp.multiProcessorCount;
+      int maxX = deviceProp.multiProcessorCount * 8;
+      
+      if(optimalX < minX) optimalX = minX;
+      if(optimalX > maxX) optimalX = maxX;
+      
+      *x = optimalX;
+      
+      printf("GPU #%d: Free memory: %.1f MB, Using grid size: %dx%d (estimated memory usage: %.1f MB)\n",
+             gpuId, freeMem / 1048576.0, *x, *y, 
+             (*x * *y * memPerThreadGroup) / 1048576.0);
+    } else if(*y <= 0) {
+      *y = 2 * _ConvertSMVer2Cores(deviceProp.major,deviceProp.minor);
+      if(*y <= 0) *y = 128;
+    }
 
   }
 
