@@ -289,7 +289,7 @@ int HashTable::Add(uint64_t h,ENTRY* e) {
       uint64_t d21 = ent->d.i64[1];
       uint64_t d22 = ent->d.i64[2];
       uint64_t d23 = ent->d.i64[3];
-      if (d10 == d20 && d11 == d21 && d12 == d22 || d13 == d23) {
+      if (d10 == d20 && d11 == d21 && d12 == d22 && d13 == d23) {
 	// Same point added twice or collision in the same herd!
 	return ADD_DUPLICATE;
       }
