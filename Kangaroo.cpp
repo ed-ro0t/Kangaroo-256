@@ -976,8 +976,11 @@ void Kangaroo::Run(int nbThread,std::vector<int> gpuId,std::vector<int> gridSize
   // Set starting parameters
   if( clientMode ) {
     // Retrieve config from server
-    if( !GetConfigFromServer() )
+    if( !GetConfigFromServer() ) {
+      free(params);
+      free(thHandles);
       ::exit(0);
+    }
     // Client save only kangaroos, force -ws
     if(workFile.length()>0)
       saveKangaroo = true;
